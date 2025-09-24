@@ -1,0 +1,117 @@
+#region VEXcode Generated Robot Configuration
+from vex import *
+import urandom
+import math
+
+# Brain should be defined by default
+brain=Brain()
+
+# Robot configuration code
+Left_motor = Motor(Ports.PORT1, GearSetting.RATIO_18_1, True)
+Right_motor = Motor(Ports.PORT10, GearSetting.RATIO_18_1, False)
+Front_RF = Sonar(brain.three_wire_port.e)
+Back_RF = Sonar(brain.three_wire_port.c)
+Left_LR = Line(brain.three_wire_port.a)
+Right_LR = Line(brain.three_wire_port.b)
+gyro_sensor = Inertial(Ports.PORT19)
+
+
+# wait for rotation sensor to fully initialize
+wait(30, MSEC)
+
+
+# Make random actually random
+def initializeRandomSeed():
+    wait(100, MSEC)
+    random = brain.battery.voltage(MV) + brain.battery.current(CurrentUnits.AMP) * 100 + brain.timer.system_high_res()
+    urandom.seed(int(random))
+      
+# Set random seed 
+initializeRandomSeed()
+
+
+def play_vexcode_sound(sound_name):
+    # Helper to make playing sounds from the V5 in VEXcode easier and
+    # keeps the code cleaner by making it clear what is happening.
+    print("VEXPlaySound:" + sound_name)
+    wait(5, MSEC)
+
+# add a small delay to make sure we don't print in the middle of the REPL header
+wait(200, MSEC)
+# clear the console to make sure we don't have the REPL in the console
+print("\033[2J")
+
+#endregion VEXcode Generated Robot Configuration
+
+# ------------------------------------------
+# 
+# 	Project:      VEXcode Project
+#	Author:       VEX
+#	Created:
+#	Description:  VEXcode V5 Python Project
+# 
+# ------------------------------------------
+
+# Library imports
+from vex import *
+
+# Begin project code
+
+# Event_ programming
+def stop_there():
+    Right_motor.stop()
+    Left_motor.stop()
+
+
+intersection = 0
+
+def follow_line():
+
+    while Front_RF.distance(MM) > 300:    
+        lr = Left_LR.reflectivity(PERCENT)
+        rr = Right_LR.reflectivity(PERCENT)
+        effortl = (95-lr)*5
+        effortr = (95-rr)*5   
+        brain.screen.set_cursor(1,1)
+        brain.screen.print('offset left side: ', (effortl/5))
+        brain.screen.set_cursor(2,1)
+        brain.screen.print('offset right side', effortr/5)
+        brain.screen.set_cursor(3,1)
+        brain.screen.print(Front_RF.distance(MM))
+        
+        if (lr < 20) and (rr < 20):
+            stop_there()
+        else:
+            Left_motor.spin(FORWARD, (750 + effortl - effortr), DPS)
+            Right_motor.spin(FORWARD, (750 - effortl + effortr), DPS)
+    stop_there()
+    brain.screen.set_cursor(7,1)
+    brain.screen.print('obstacle detected')
+
+def turn_left():
+    Left_motor.spin_for(REVERSE, 1000,DEGREES,wait=False)
+    Right_motor.spin_for(FORWARD, 1000,DEGREES)
+    brain.screen.set_cursor(5,1)
+    brain.screen.print('turned left')
+    while True:
+        lr = Left_LR.reflectivity(PERCENT)
+        rr= Right_LR.reflectivity(PERCENT)
+        if lr > 40 or rr > 40:
+            break
+        else:
+           Left_motor.spin(FORWARD, 400, DPS)
+           Right_motor.spin(FORWARD, 300, DPS)
+def turn_right():
+    Left_motor.spin_for(FORWARD, 1000,DEGREES,wait=False)
+    Right_motor.spin_for(REVERSE, 1000,DEGREES)
+    brain.screen.set_cursor(5,1)
+    brain.screen.print('turned Right')
+
+intersection = 0
+while intersection !=3:
+    follow_line()
+    turn_left()
+    intersection +=1
+follow_line()
+turn_right()
+# fall back
